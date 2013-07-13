@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /*
 Automatically grade files for the presence of specified HTML tags/attributes.
 Uses commander.js and cheerio. Teaches command line application development
@@ -24,6 +25,7 @@ References:
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var rest = require('restler');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 
@@ -38,19 +40,14 @@ var assertFileExists = function (infile)
   return instr;
 };
 
-var cheerioHtmlFile = function (htmlfile)
-{
-  return cheerio.load(fs.readFileSync(htmlfile));
-};
-
 var loadChecks = function (checksfile)
 {
   return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function (htmlfile, checksfile)
+var checkHtml = function (html, checksfile)
 {
-  $ = cheerioHtmlFile(htmlfile);
+  $ = cheerio.load(html);
   var checks = loadChecks(checksfile).sort();
   var out = {};
   for (var ii in checks)
@@ -68,17 +65,52 @@ var clone = function (fn)
   return fn.bind({});
 };
 
+var printJSONResult = function (html, checksfile)
+{
+  var checkJson = checkHtml(html, checksfile);
+  var outJson = JSON.stringify(checkJson, null, 4);
+  console.log(outJson);
+};
+
 if (require.main == module)
 {
   program
     .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-    .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+    .option('-f, --file <html_file>', 'Path to index.html', null, HTMLFILE_DEFAULT)
     .parse(process.argv);
-  var checkJson = checkHtmlFile(program.file, program.checks);
-  var outJson = JSON.stringify(checkJson, null, 4);
-  console.log(outJson);
+
+  if (fs.existsSync(program.file))
+  {
+    fs.readFile(program.file, null, function (err, data)
+    {
+      if (err)
+      {
+	console.error('Error when reading file: ' + program.file);
+	process.exit(1);
+      }
+      else
+      {
+	printJSONResult(data, program.checks);
+      }
+    });
+  }
+  else
+  {
+    rest.get(program.file).on('complete', function (result, response)
+    {
+      if (result instanceof Error)
+      {
+	console.error('Error when requesting URL: ' + program.file);
+	process.exit(1);
+      }
+      else
+      {
+	printJSONResult(result, program.checks);
+      }
+    });
+  }
 }
 else
 {
-  exports.checkHtmlFile = checkHtmlFile;
+  exports.checkHtml = checkHtml;
 }
