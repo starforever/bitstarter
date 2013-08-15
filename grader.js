@@ -85,12 +85,12 @@ if (require.main == module)
     {
       if (err)
       {
-	console.error('Error when reading file: ' + program.file);
-	process.exit(1);
+        console.error('Error when reading file: ' + program.file);
+        process.exit(1);
       }
       else
       {
-	printJSONResult(data, program.checks);
+        printJSONResult(data, program.checks);
       }
     });
   }
@@ -100,12 +100,12 @@ if (require.main == module)
     {
       if (result instanceof Error)
       {
-	console.error('Error when requesting URL: ' + program.file);
-	process.exit(1);
+        console.error('Error when requesting URL: ' + program.file);
+        process.exit(1);
       }
       else
       {
-	printJSONResult(result, program.checks);
+        printJSONResult(result, program.checks);
       }
     });
   }
